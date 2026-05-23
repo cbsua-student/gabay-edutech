@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GABAY EduTech — Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+  /* ---------- Design tokens: change these once, the whole site follows ---------- */
+  :root{
+    --paper:#FBFAF6;       /* warm off-white background */
+    --surface:#FFFFFF;     /* cards */
+    --ink:#262220;         /* main text (warm near-black) */
+    --ink-soft:#5C554F;    /* secondary text */
+    --line:#E7E1D6;        /* hairline borders */
+    --accent:#1F6F66;      /* the single action colour: deep teal */
+    --accent-soft:#E8F1EF; /* tinted surfaces tied to the accent */
+    --accent-ink:#16514a;  /* accent text on light */
+    --warn:#8A5A2B;        /* "not allowed" / caution */
+    --maxread:65ch;        /* comfortable reading measure */
+    --sp:1rem;             /* base spacing step */
+    --radius:10px;
+    --ui:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    --serif:'Newsreader',Georgia,'Times New Roman',serif;
+  }
+
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:var(--serif);font-size:18px;line-height:1.6;
+    font-optical-sizing:auto;
+  }
+  /* UI chrome (nav, buttons, labels) uses the fast system sans */
+  nav,button,.ui,label,input,select,textarea,.tag,.crumb{font-family:var(--ui)}
+
+  a{color:var(--accent-ink);text-underline-offset:3px}
+  a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{
+    outline:3px solid var(--accent);outline-offset:2px;border-radius:4px;
+  }
+
+  .skip{position:absolute;left:-999px;top:0;background:var(--accent);color:#fff;padding:.5rem .9rem;border-radius:0 0 8px 0;z-index:50}
+  .skip:focus{left:0}
+
+  /* ---------- Layout ---------- */
+  .wrap{max-width:880px;margin:0 auto;padding:0 1.25rem}
+  header.site{border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
+  .bar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.85rem 0}
+  .brand{display:flex;align-items:baseline;gap:.6rem;text-decoration:none;color:var(--ink)}
+  .brand .mark{font-family:var(--serif);font-weight:600;font-size:1.3rem;letter-spacing:.02em}
+  .brand .mean{font-family:var(--ui);font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.12em}
+  .crumb{font-size:.85rem;color:var(--ink-soft)}
+  .crumb a{color:var(--ink-soft)}
+  .back{display:inline-flex;align-items:center;gap:.45rem;background:var(--surface);border:1px solid var(--line);
+        color:var(--accent-ink);font-size:.88rem;font-weight:600;cursor:pointer;padding:.5rem .9rem;border-radius:8px;margin-bottom:.4rem}
+  .back:hover{background:var(--accent-soft);border-color:var(--accent)}
+
+  main{padding:2.4rem 0 4rem;min-height:60vh}
+  h1{font-weight:600;font-size:clamp(1.9rem,5vw,2.7rem);line-height:1.15;margin:.2rem 0 .4rem}
+  h2{font-weight:600;font-size:1.35rem;margin:2.2rem 0 .6rem}
+  h3{font-weight:600;font-size:1.08rem;margin:0}
+  .lede{font-size:1.12rem;color:var(--ink-soft);max-width:var(--maxread);margin:.4rem 0 0}
+  p,li{max-width:var(--maxread)}
+  .motto{font-style:italic;color:var(--ink-soft)}
+
+  /* ---------- Buttons ---------- */
+  .btn{display:inline-flex;align-items:center;gap:.5rem;background:var(--accent);color:#fff;border:none;
+       padding:.7rem 1.15rem;border-radius:8px;font-size:.95rem;cursor:pointer;text-decoration:none}
+  .btn:hover{background:var(--accent-ink)}
+  .btn.ghost{background:transparent;color:var(--accent-ink);border:1px solid var(--line)}
+  .btn.ghost:hover{background:var(--accent-soft)}
+
+  /* ---------- Home: activity cards ---------- */
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.8rem}
+  @media(max-width:640px){.cards{grid-template-columns:1fr}}
+  .card{display:block;text-decoration:none;color:inherit;background:var(--surface);border:1px solid var(--line);
+        border-radius:var(--radius);padding:1.3rem 1.3rem 1.1rem;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}
+  .card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(38,34,32,.07);border-color:#d8d0c2}
+  .card .idx{font-family:var(--ui);font-size:.72rem;letter-spacing:.14em;color:var(--accent-ink);text-transform:uppercase}
+  .card h3{margin:.45rem 0 .3rem;font-size:1.15rem}
+  .card p{font-size:.95rem;color:var(--ink-soft);margin:0}
+  .card .go{font-family:var(--ui);font-size:.85rem;color:var(--accent-ink);margin-top:.8rem;display:inline-block}
+  .card.soon{opacity:.85}
+  .card.soon .idx{color:var(--ink-soft)}
+
+  /* ---------- Stepped choices (activity hub) ---------- */
+  .steps{list-style:none;padding:0;margin:1.6rem 0 0;max-width:var(--maxread)}
+  .steps li{margin:0 0 .8rem}
+  .step{display:flex;gap:1rem;align-items:flex-start;background:var(--surface);border:1px solid var(--line);
+        border-radius:var(--radius);padding:1rem 1.1rem;text-decoration:none;color:inherit;transition:border-color .15s,background .15s}
+  .step:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .step .n{flex:0 0 auto;width:1.9rem;height:1.9rem;border-radius:50%;background:var(--accent-soft);color:var(--accent-ink);
+           font-family:var(--ui);font-weight:600;font-size:.9rem;display:grid;place-items:center}
+  .step .t{font-weight:600}
+  .step .d{font-family:var(--ui);font-size:.85rem;color:var(--ink-soft);margin-top:.15rem;display:block}
+
+  /* ---------- Accordions (progressive disclosure) ---------- */
+  .acc{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-top:1rem;background:var(--surface)}
+  .acc + .acc{margin-top:.6rem}
+  .acc-btn{width:100%;display:flex;align-items:center;gap:.8rem;background:none;border:none;text-align:left;
+           padding:1rem 1.1rem;cursor:pointer;font-size:1rem;color:var(--ink)}
+  .acc-btn .num{font-family:var(--ui);font-size:.78rem;color:var(--accent-ink);min-width:1.6rem}
+  .acc-btn .ttl{font-family:var(--serif);font-weight:600;flex:1}
+  .acc-btn .chev{transition:transform .2s ease;color:var(--ink-soft)}
+  .acc[open] .acc-btn .chev{transform:rotate(180deg)}
+  .acc-body{padding:0 1.1rem 1.1rem 3.5rem}
+  .acc-body p{margin:.2rem 0 .6rem;font-size:.98rem}
+  .acc-body .k{font-family:var(--ui);font-size:.74rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft)}
+  .eg{background:var(--accent-soft);border-radius:8px;padding:.7rem .9rem;font-size:.95rem;margin-top:.3rem}
+
+  /* ---------- Guidelines ---------- */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem}
+  @media(max-width:640px){.grid2{grid-template-columns:1fr}}
+  .panel{border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem 1.2rem;background:var(--surface)}
+  .panel.ok{border-left:4px solid var(--accent)}
+  .panel.no{border-left:4px solid var(--warn)}
+  .panel h3{font-family:var(--ui);font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft)}
+  .panel ul{margin:.6rem 0 0;padding-left:1.1rem}
+  .panel li{font-size:.95rem;margin:.3rem 0}
+
+  /* ---------- Workspace form ---------- */
+  .field{margin:1.1rem 0;max-width:var(--maxread)}
+  label.lbl{display:block;font-size:.82rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);margin-bottom:.35rem}
+  textarea,input[type=text]{width:100%;border:1px solid var(--line);border-radius:8px;padding:.7rem .8rem;
+                            font-size:1rem;background:var(--surface);color:var(--ink)}
+  textarea{min-height:2.8rem;resize:none;overflow:hidden}
+  .toggle{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:.2rem}
+  .toggle button{background:var(--surface);border:none;padding:.55rem 1.1rem;cursor:pointer;font-size:.9rem;color:var(--ink-soft)}
+  .toggle button[aria-pressed=true]{background:var(--accent);color:#fff}
+  .phase{border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem;margin:.7rem 0;background:var(--surface);max-width:var(--maxread)}
+  .phase .ph-h{display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem}
+  .phase .ph-h .tag{font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;background:var(--accent-soft);color:var(--accent-ink);padding:.18rem .5rem;border-radius:999px}
+  .phase .ph-h .added{background:#F1E8DC;color:var(--warn)}
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+  @media(max-width:560px){.twocol{grid-template-columns:1fr}}
+  .review{background:var(--accent-soft);border:1px solid #cfe3df;border-radius:var(--radius);padding:1.1rem 1.2rem;margin-top:1.4rem;max-width:var(--maxread)}
+  .review h3{font-family:var(--ui);font-size:.85rem;text-transform:uppercase;letter-spacing:.08em;color:var(--accent-ink)}
+  .review pre{white-space:pre-wrap;font-family:var(--ui);font-size:.9rem;color:var(--ink);margin:.5rem 0 0;line-height:1.5}
+
+  /* ---------- Lab: tabs + filter ---------- */
+  .tabs{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.2rem}
+  .tab{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:.45rem 1rem;font-size:.88rem;cursor:pointer;color:var(--ink-soft)}
+  .tab[aria-pressed=true]{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .search{margin-top:1rem;max-width:var(--maxread)}
+  .simlist{margin-top:1rem;display:grid;gap:.6rem}
+  .sim{border:1px solid var(--line);border-radius:var(--radius);padding:.9rem 1.1rem;background:var(--surface)}
+  .sim h3{font-size:1.02rem}
+  .sim p{font-size:.9rem;color:var(--ink-soft);margin:.2rem 0 .5rem}
+  .sim a{font-family:var(--ui);font-size:.85rem}
+  .muted{color:var(--ink-soft);font-size:.9rem}
+
+  /* ---------- Journal self-assessment ---------- */
+  .rate{display:flex;align-items:center;justify-content:space-between;gap:1rem;border-bottom:1px solid var(--line);padding:.8rem 0;max-width:var(--maxread)}
+  .rate:last-child{border-bottom:none}
+  .rate .q{font-size:.98rem}
+  .scale{display:inline-flex;gap:.3rem;flex:0 0 auto}
+  .scale label{cursor:pointer}
+  .scale input{position:absolute;opacity:0;width:0;height:0}
+  .dot{width:1.9rem;height:1.9rem;border:1px solid var(--line);border-radius:8px;display:grid;place-items:center;font-size:.85rem;color:var(--ink-soft)}
+  .scale input:checked + .dot{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .scale input:focus-visible + .dot{outline:3px solid var(--accent);outline-offset:2px}
+
+  .note{background:#F4F0E8;border-radius:var(--radius);padding:1rem 1.2rem;font-size:.95rem;color:var(--ink-soft);max-width:var(--maxread);margin-top:1.4rem}
+
+  /* ---------- PDF export document ---------- */
+  .print-doc{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:2.2rem 2.4rem;max-width:780px;margin:0 auto;color:#111;box-shadow:0 8px 30px rgba(38,34,32,.06)}
+  .pd-head{border-bottom:2px solid #111;padding-bottom:.6rem;margin-bottom:1.1rem}
+  .pd-title{font-size:1.7rem;margin:0;border:none}
+  .pd-meta{font-family:var(--ui);color:#444;margin:.35rem 0 0;font-size:.95rem}
+  .pd-h{font-size:1.05rem;border-bottom:1px solid var(--line);padding-bottom:.2rem;margin:1.4rem 0 .5rem}
+  .pd-strat{font-family:var(--ui);font-size:.78rem;color:var(--ink-soft)}
+  .pd-table{width:100%;border-collapse:collapse;margin:.3rem 0;font-size:.95rem}
+  .pd-table th,.pd-table td{border:1px solid var(--line);padding:.5rem .6rem;text-align:left;vertical-align:top}
+  .pd-table tbody th{width:9rem;font-family:var(--ui);font-weight:600;background:#faf8f3}
+  .pd-table.proc thead th{background:#f1ede4;font-family:var(--ui);font-size:.82rem;letter-spacing:.04em}
+  .pd-table.proc th:first-child{width:7rem;font-family:var(--ui)}
+  @media print{
+    @page{margin:16mm}
+    header.site,footer,#back-slot,.no-print,.crumb,.scrollfab{display:none!important}
+    main{padding:0}.wrap{max-width:none;padding:0}
+    body{background:#fff;font-size:12pt}
+    .print-doc{border:none;box-shadow:none;padding:0;max-width:none}
+    .pd-table tr{break-inside:avoid}
+    #app{animation:none}
+  }
+
+  /* ---------- gentle view-enter motion ---------- */
+  #app{animation:rise .35s ease both}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @media(prefers-reduced-motion:reduce){
+    #app,.card{animation:none;transition:none}
+  }
+  footer{border-top:1px solid var(--line);padding:1.4rem 0;color:var(--ink-soft);font-family:var(--ui);font-size:.8rem}
+
+  /* ===================================================================
+     Visual refinement layer — minimal, but with a point of view.
+     A warm two-tone palette and a "guide" motif keep it from going dull.
+     =================================================================== */
+  :root{
+    --ink:#221F1C;
+    --accent:#15605A;        /* deeper pine-teal: the calm */
+    --accent-ink:#0E4B46;
+    --accent-soft:#E6F0EE;
+    --accent2:#C16A3A;        /* warm clay: the spark, used sparingly */
+    --accent2-soft:#F7ECE3;
+    --ui:'Hanken Grotesk',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  }
+  .brand .mean{color:var(--accent2)}
+
+  .eyebrow{font-family:var(--ui);font-size:.74rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+           color:var(--accent2);display:inline-flex;align-items:center;gap:.65rem;margin:0 0 .5rem}
+  .eyebrow::before{content:'';width:1.7rem;height:2px;background:var(--accent2)}
+
+  h1{font-size:clamp(2.3rem,6.5vw,3.6rem);letter-spacing:-.02em;line-height:1.07;margin:.1rem 0 .5rem}
+  .lede{font-size:1.18rem;line-height:1.55}
+  .motto{display:inline-block;font-style:italic;color:var(--ink);border-left:3px solid var(--accent2);
+          padding-left:.85rem;margin:1.1rem 0 0;font-size:1.05rem}
+
+  /* editorial kicker on section headings (not on the print document) */
+  main h2:not(.pd-h)::before{content:'';display:block;width:1.9rem;height:3px;border-radius:2px;
+          background:var(--accent);margin-bottom:.55rem}
+
+  /* cards: ghosted numeral, arrow that leans in on hover, staggered fade */
+  .cards{counter-reset:card}
+  .card{position:relative;overflow:hidden;counter-increment:card;opacity:0;animation:fade .55s ease forwards}
+  .card::after{content:counter(card,decimal-leading-zero);position:absolute;right:1rem;bottom:.35rem;
+          font-family:var(--serif);font-weight:500;font-size:3.4rem;line-height:1;color:var(--line);pointer-events:none}
+  .card .idx{color:var(--accent2)}
+  .card .go{transition:transform .18s ease}
+  .card:hover .go{transform:translateX(4px)}
+  .card:nth-child(1){animation-delay:.04s}.card:nth-child(2){animation-delay:.10s}
+  .card:nth-child(3){animation-delay:.16s}.card:nth-child(4){animation-delay:.22s}
+  @keyframes fade{to{opacity:1}}
+
+  /* steps: a quiet path threading through warm numerals */
+  .steps{position:relative}
+  .steps::before{content:'';position:absolute;left:2.05rem;top:2.4rem;bottom:2.4rem;width:2px;background:var(--line)}
+  .step{position:relative;z-index:1}
+  .step .n{background:var(--accent2-soft);color:var(--accent2);border:2px solid var(--accent2);font-weight:700}
+  .step:hover .n{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+  /* small accents */
+  .acc-btn .num{color:var(--accent2);font-weight:700}
+  a{text-decoration-color:var(--accent2)}
+  .btn{font-weight:600;letter-spacing:.01em;transition:transform .15s ease,background .15s ease}
+  .btn:hover{transform:translateY(-1px)}
+
+  @media(prefers-reduced-motion:reduce){
+    .card{animation:none;opacity:1}
+    .btn:hover,.card:hover .go{transform:none}
+  }
+
+  /* ===================================================================
+     Dark mode + on-screen controls
+     =================================================================== */
+  :root{--on-accent:#fff}
+  [data-theme="dark"]{
+    --paper:#191815; --surface:#221F1B; --ink:#EDE7DD; --ink-soft:#A79F95; --line:#39342C;
+    --accent:#6FC2B4; --accent-ink:#9FDDD3; --accent-soft:#1E312D;
+    --accent2:#E08A57; --accent2-soft:#33271E; --on-accent:#10211E; --warn:#D69A66;
+  }
+  html{background:var(--paper)}
+  body{transition:background .2s ease,color .2s ease}
+  /* keep button/active text readable on the accent in both themes */
+  .btn{color:var(--on-accent)}
+  .toggle button[aria-pressed="true"],.tab[aria-pressed="true"]{color:var(--on-accent)}
+  .scale input:checked + .dot{color:var(--on-accent)}
+  .step:hover .n{color:var(--on-accent)}
+  .note{background:var(--accent2-soft);color:var(--ink-soft)}
+
+  .bar-right{display:flex;align-items:center;gap:.8rem}
+  .theme-btn{display:inline-grid;place-items:center;width:2.3rem;height:2.3rem;border:1px solid var(--line);
+             background:var(--surface);border-radius:8px;cursor:pointer;color:var(--ink);flex:0 0 auto}
+  .theme-btn:hover{background:var(--accent-soft);border-color:var(--accent)}
+  .theme-btn svg{width:1.15rem;height:1.15rem}
+  .ico-sun{display:none}
+  [data-theme="dark"] .ico-moon{display:none}
+  [data-theme="dark"] .ico-sun{display:block}
+
+  .scrollfab{position:fixed;right:1rem;bottom:1rem;display:flex;flex-direction:column;gap:.45rem;z-index:30}
+  .scrollfab button{width:2.6rem;height:2.6rem;border-radius:50%;border:1px solid var(--line);background:var(--surface);
+                    color:var(--accent-ink);cursor:pointer;display:grid;place-items:center;font-size:1.15rem;line-height:1;
+                    box-shadow:0 4px 14px rgba(0,0,0,.16)}
+  .scrollfab button:hover{background:var(--accent-soft);border-color:var(--accent)}
+  @media(max-width:560px){.scrollfab button{width:2.35rem;height:2.35rem}}
+</style>
+</head>
+<body>
+<a href="#main" class="skip">Skip to content</a>
+
+<header class="site">
+  <div class="wrap bar">
+    <a class="brand" href="#/" aria-label="GABAY EduTech home">
+      <span class="mark">GABAY EduTech</span>
+      <span class="mean">gabay · to guide</span>
+    </a>
+    <div class="bar-right">
+      <span class="crumb ui" id="crumb" aria-live="polite"></span>
+      <button class="theme-btn ui" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+        <svg class="ico-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="ico-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <div class="wrap">
+    <div id="back-slot"></div>
+    <div id="app"></div>
+  </div>
+</main>
+
+<footer><div class="wrap">GABAY EduTech — interactive prototype. Content is placeholder for demonstration. Nothing is saved.</div></footer>
+
+<div class="scrollfab">
+  <button id="scroll-top" aria-label="Scroll to top" title="Scroll to top">&#8593;</button>
+  <button id="scroll-bottom" aria-label="Scroll to bottom" title="Scroll to bottom">&#8595;</button>
+</div>
+
+<script>
+/* =====================================================================
+   CONTENT (data) — kept separate from layout so your group can edit
+   this block without touching any HTML/CSS.
+   ===================================================================== */
+const DATA = {
+  activities:[
+    {id:'lpc', idx:'Activity 01 · Curriculum', title:'Independent Lesson Planning Challenge',
+     blurb:'Build a full lesson plan with your own judgment first — AI only helps you polish, after.', go:true},
+    {id:'journal', idx:'Activity 02 · Pedagogy', title:'Reflective Teaching & AI Journal',
+     blurb:'Look back honestly at your choices and how much you leaned on AI.', go:true},
+    {id:'lab', idx:'Activity 03 · Pedagogy', title:'Science Innovation Laboratory',
+     blurb:'A curated shelf of virtual science simulations, sorted so you find the right one fast.', go:true},
+    {id:'assessment', idx:'Activity 04 · Assessment', title:'Assessment Design Without AI', soon:true,
+     blurb:'Strengthen authentic assessment design without AI-generated material.', go:true},
+  ],
+  elements:[
+    {t:'Learning Outcomes', d:'What learners should know and demonstrate after instruction.', p:'Keeps the lesson aligned to curriculum standards and MELCs.', e:'Learners demonstrate understanding of the particle nature of matter.'},
+    {t:'Objectives', d:'Specific targets for the end of the lesson, across the cognitive, affective, and psychomotor domains (Bloom\u2019s).', p:'Turns broad outcomes into measurable, lesson-sized goals.', e:'At the end of the lesson, learners can explain the states of matter.'},
+    {t:'Topic', d:'The subject matter and subtopic in focus.', p:'Sets the boundary of what the lesson covers.', e:'Science 7 \u2014 States of Matter \u2014 Changes in States.'},
+    {t:'References', d:'The sources used to prepare the lesson.', p:'Keeps content accurate and academically honest.', e:'K\u201312 Guide, MATATAG Curriculum, DepEd modules.'},
+    {t:'Instructional Materials', d:'Tools and resources used during teaching, traditional and digital.', p:'Supports engagement and clearer understanding.', e:'Charts, flashcards \u2014 plus slides, videos, simulations.'},
+    {t:'Learning Activities', d:'Structured tasks that help learners reach the objectives.', p:'Drives participation and higher-order thinking.', e:'Group discussion, experiment, reflection journal.'},
+    {t:'Concept', d:'The core idea or principle being taught.', p:'Gives the lesson a single conceptual focus.', e:'Matter changes state with temperature and particle arrangement.'},
+    {t:'Skills to Develop', d:'The cognitive, technological, and social skills the lesson builds.', p:'Connects the lesson to 21st-century learning.', e:'Critical thinking, digital literacy, collaboration.'},
+    {t:'Values Integration', d:'Moral, ethical, and social values woven into the lesson.', p:'Supports character formation alongside content.', e:'Environmental stewardship during an ecology lesson.'},
+    {t:'Methodology', d:'The teaching approach used to deliver the lesson.', p:'Shapes how learners engage with the content.', e:'Inquiry-based, problem-based, or project-based learning.'},
+    {t:'Strategy Applied', d:'The lesson framework that structures delivery \u2014 5Es or 7Es.', p:'Sequences the lesson into clear instructional phases.', e:'You choose 5Es or 7Es in the workspace.'},
+  ],
+  phases:[
+    {k:'Greetings', fivesToo:true, added:false},
+    {k:'Opening Prayer', fivesToo:true, added:false},
+    {k:'Recall', fivesToo:true, added:false},
+    {k:'Elicit', fivesToo:false, added:true, hint:'Surface what learners already know.'},
+    {k:'Engage', fivesToo:true, added:false, hint:'Spark curiosity and interest.'},
+    {k:'Explore', fivesToo:true, added:false, hint:'Investigate hands-on; you facilitate.'},
+    {k:'Explain', fivesToo:true, added:false, hint:'Clarify findings; introduce terms.'},
+    {k:'Elaborate', fivesToo:true, added:false, hint:'Apply the concept to new situations.'},
+    {k:'Evaluate', fivesToo:true, added:false, hint:'Measure understanding.'},
+    {k:'Extend', fivesToo:false, added:true, hint:'Carry learning beyond the classroom.'},
+  ],
+  guidelines:{
+    rules:['Create your lesson plan independently.','Avoid using AI-generated lesson plans during the first draft.','Use your own instructional strategies and classroom examples.','Integrate technology meaningfully, not excessively.','Reflect on your planning decisions after submission.'],
+    ok:['Grammar checking','Formatting','Idea refinement','Reflection support'],
+    no:['Fully AI-generated lesson plans','Copy-pasted AI output','AI-made assessments used without modification'],
+  },
+  sims:{
+    'Physics':[
+      {n:'PhET Physics', u:'Mechanics, waves, circuits, energy', url:'https://phet.colorado.edu'},
+      {n:'oPhysics', u:'Interactive physics demonstrations', url:'https://ophysics.com'},
+      {n:'Falstad Applets', u:'Circuits, waves, optics, electromagnetism', url:'https://falstad.com'},
+      {n:'myPhysicsLab', u:'Real-time mechanics simulations', url:'https://myphysicslab.com'},
+      {n:'CK-12 Simulations', u:'Real-world physics simulations', url:'https://interactives.ck12.org'},
+    ],
+    'Chemistry':[
+      {n:'ChemCollective', u:'Authentic virtual chemistry lab tasks', url:'https://chemcollective.org'},
+      {n:'PhET Chemistry', u:'Molecules, reactions, pH, concentration', url:'https://phet.colorado.edu'},
+      {n:'MolView', u:'3D molecular visualization', url:'https://molview.org'},
+      {n:'LibreTexts', u:'Chemistry tutorials and simulations', url:'https://chem.libretexts.org'},
+      {n:'PraxiLabs', u:'Virtual chemistry laboratory simulations', url:'https://praxilabs.com'},
+    ],
+    'Biology':[
+      {n:'HHMI BioInteractive', u:'Biology virtual labs and models', url:'https://www.biointeractive.org'},
+      {n:'LabXchange', u:'Free science platform from Harvard', url:'https://www.labxchange.org'},
+      {n:'Concord Consortium', u:'Visual biology simulations', url:'https://learn.concord.org'},
+      {n:'Virtual Biology Lab', u:'Inquiry-based biology models', url:'https://virtualbiologylab.org'},
+      {n:'Connected Biology', u:'Genetics, evolution, multi-level models', url:'https://connectedbio.org'},
+    ],
+    'Earth Science':[
+      {n:'PhET Earth & Space', u:'Earth and space science simulations', url:'https://phet.colorado.edu'},
+      {n:'NASA Sea Level Portal', u:'Glaciers, ice sheets, sea level', url:'https://sealevel.nasa.gov'},
+      {n:'UCAR SciEd', u:'Weather, climate, atmosphere', url:'https://scied.ucar.edu'},
+      {n:'Nat Geo Education', u:'Tectonics, climate, Earth systems', url:'https://education.nationalgeographic.org'},
+      {n:'PBS LearningMedia', u:'Plate boundaries, earthquakes, volcanoes', url:'https://www.pbslearningmedia.org'},
+    ],
+  },
+  journal:[
+    {h:'Learning Experience', qs:[
+      'What important concepts did you learn from the lesson planning session?',
+      'What challenges did you encounter while creating your lesson plan independently?',
+      'Which lesson planning component was most difficult to accomplish? Why?',
+      'How did the activity improve your confidence as a future teacher?']},
+    {h:'Lesson Planning', qs:[
+      'How did you select your teaching strategies and learning activities?',
+      'How did your lesson objectives align with the curriculum competencies?',
+      'In what ways did your lesson promote learner-centered instruction?',
+      'Which part of your lesson plan was the strongest? Explain why.',
+      'If given another opportunity, what part of your lesson plan would you improve?']},
+    {h:'Responsible AI Use', qs:[
+      'Did you use AI tools during the activity? If yes, how were they used?',
+      'Which parts of the lesson plan were completed independently, without AI?']},
+  ],
+  indicators:[
+    'I created original instructional ideas independently.',
+    'I aligned my lesson with curriculum competencies.',
+    'I integrated technology meaningfully.',
+    'I minimized overdependence on AI tools.',
+    'I reflected critically on my teaching decisions.',
+    'I demonstrated learner-centered instructional planning.',
+    'I improved my confidence in lesson planning.',
+    'I practiced responsible and ethical AI use.',
+  ],
+};
+
+/* in-memory state only — nothing persists (matches the "in-page for now" choice) */
+const state = { strategy:'7es', ws:{}, lab:'Physics', labq:'', ratings:{} };
+
+/* =====================================================================
+   Tiny helpers
+   ===================================================================== */
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const app = document.getElementById('app');
+const crumbEl = document.getElementById('crumb');
+const backSlot = document.getElementById('back-slot');
+
+/* =====================================================================
+   Views — each returns an HTML string built from DATA
+   ===================================================================== */
+function vHome(){
+  return `
+  <p class="eyebrow">An open guide for future teachers</p>
+  <h1>Plan it yourself first.</h1>
+  <p class="lede">A guided workspace for future Filipino educators \u2014 to teach with technology thoughtfully, and lean on AI less.</p>
+  <p class="motto">Guiding future teachers toward intelligent and responsible technology integration.</p>
+  <div class="cards">
+    ${DATA.activities.map(a=>`
+      <a class="card ${a.soon?'soon':''}" href="#/${a.id}">
+        <span class="idx">${esc(a.idx)}</span>
+        <h3>${esc(a.title)}</h3>
+        <p>${esc(a.blurb)}</p>
+        <span class="go">${a.soon?'In design \u2192':'Enter \u2192'}</span>
+      </a>`).join('')}
+  </div>`;
+}
+
+function vLpc(){
+  return `
+  <h1>Independent Lesson Planning Challenge</h1>
+  <p class="lede">Create a lesson plan using your own pedagogical understanding before consulting any AI tool. Take it one step at a time.</p>
+  <ol class="steps" aria-label="Steps in this challenge">
+    <li><a class="step" href="#/lpc/learn"><span class="n">1</span><span><span class="t">Learn the elements</span><span class="d">The 11 parts of a lesson plan, explained briefly.</span></span></a></li>
+    <li><a class="step" href="#/lpc/guidelines"><span class="n">2</span><span><span class="t">Read the guidelines</span><span class="d">What\u2019s expected, and where AI is allowed.</span></span></a></li>
+    <li><a class="step" href="#/lpc/workspace"><span class="n">3</span><span><span class="t">Open the workspace</span><span class="d">Draft your plan. Choose 5Es or 7Es.</span></span></a></li>
+  </ol>`;
+}
+
+function vLearn(){
+  return `
+  <h1>Elements of a lesson plan</h1>
+  <p class="lede">Aligned with the K\u201312 and MATATAG frameworks. Tap any element to expand it \u2014 nothing is forced on you at once.</p>
+  ${DATA.elements.map((el,i)=>`
+    <details class="acc">
+      <summary class="acc-btn">
+        <span class="num">${String(i+1).padStart(2,'0')}</span>
+        <span class="ttl">${esc(el.t)}</span>
+        <span class="chev" aria-hidden="true">\u25be</span>
+      </summary>
+      <div class="acc-body">
+        <p>${esc(el.d)}</p>
+        <p class="k">Why it matters</p><p>${esc(el.p)}</p>
+        <p class="k">Example</p><div class="eg">${esc(el.e)}</div>
+      </div>
+    </details>`).join('')}
+  <div style="margin-top:1.6rem"><a class="btn" href="#/lpc/workspace">Go to the workspace \u2192</a></div>`;
+}
+
+function vGuidelines(){
+  const g=DATA.guidelines;
+  return `
+  <h1>Challenge guidelines</h1>
+  <p class="lede">The point is to build your own judgment. AI is a helper for later, not the author.</p>
+  <ol class="steps" style="margin-top:1rem">
+    ${g.rules.map((r,i)=>`<li><div class="step" style="cursor:default"><span class="n">${i+1}</span><span class="t">${esc(r)}</span></div></li>`).join('')}
+  </ol>
+  <div class="grid2">
+    <div class="panel ok"><h3>AI allowed \u2014 after your draft</h3><ul>${g.ok.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
+    <div class="panel no"><h3>Not allowed</h3><ul>${g.no.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
+  </div>
+  <div style="margin-top:1.6rem"><a class="btn" href="#/lpc/workspace">Start drafting \u2192</a></div>`;
+}
+
+function field(id,label,ph){
+  return `<div class="field"><label class="lbl" for="${id}">${esc(label)}</label>
+    <textarea id="${id}" data-ws="${id}" placeholder="${esc(ph||'')}">${esc(state.ws[id]||'')}</textarea></div>`;
+}
+
+function vWorkspace(){
+  const phases = DATA.phases.filter(p=> state.strategy==='7es' ? true : p.fivesToo);
+  return `
+  <h1>Lesson planning workspace</h1>
+  <p class="lede">Draft your plan below. Switch strategy and the procedure updates \u2014 only the phases you need appear.</p>
+
+  <h2>Lesson details</h2>
+  <div class="twocol">
+    <div class="field"><label class="lbl" for="name">Teacher\u2019s name</label><input type="text" id="name" data-ws="name" value="${esc(state.ws.name||'')}"></div>
+    <div class="field"><label class="lbl" for="grade">Grade &amp; subject</label><input type="text" id="grade" data-ws="grade" value="${esc(state.ws.grade||'')}"></div>
+  </div>
+
+  <h2>Outcomes &amp; objectives</h2>
+  ${field('outcomes','Learning Outcomes','What should learners know or demonstrate?')}
+  ${field('cog','Objective \u2014 Cognitive (thinking)','e.g., explain the states of matter')}
+  ${field('aff','Objective \u2014 Affective (attitude)','e.g., appreciate water conservation')}
+  ${field('psy','Objective \u2014 Psychomotor (skill)','e.g., demonstrate proper lab procedure')}
+
+  <h2>Subject matter</h2>
+  ${field('topic','Topic','e.g., Science 7 \u2014 States of Matter')}
+  ${field('materials','Instructional materials','Charts, slides, simulations\u2026')}
+  ${field('values','Values integration','e.g., environmental stewardship')}
+
+  <h2>Strategy</h2>
+  <div class="field">
+    <label class="lbl">Choose your lesson framework</label>
+    <div class="toggle" role="group" aria-label="Lesson strategy">
+      <button data-strat="5es" aria-pressed="${state.strategy==='5es'}">5Es</button>
+      <button data-strat="7es" aria-pressed="${state.strategy==='7es'}">7Es</button>
+    </div>
+    <p class="muted" style="margin:.5rem 0 0">${state.strategy==='7es'
+      ? '7Es adds Elicit (front) and Extend (back) for prior knowledge and transfer.'
+      : '5Es is the core sequence. Switch to 7Es to add Elicit and Extend.'}</p>
+  </div>
+
+  <h2>Procedure</h2>
+  ${phases.map(p=>`
+    <div class="phase">
+      <div class="ph-h"><h3>${esc(p.k)}</h3>${p.added?'<span class="tag added">7Es only</span>':''}</div>
+      ${p.hint?`<p class="muted" style="margin:.1rem 0 .6rem">${esc(p.hint)}</p>`:''}
+      <div class="twocol">
+        <div><label class="lbl" for="t_${p.k}">Teacher\u2019s activity</label><textarea id="t_${p.k}" data-ws="t_${p.k}">${esc(state.ws['t_'+p.k]||'')}</textarea></div>
+        <div><label class="lbl" for="s_${p.k}">Student\u2019s activity</label><textarea id="s_${p.k}" data-ws="s_${p.k}">${esc(state.ws['s_'+p.k]||'')}</textarea></div>
+      </div>
+    </div>`).join('')}
+
+  <div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap">
+    <a class="btn" href="#/lpc/export">Export to PDF</a>
+    <button class="btn ghost" id="review-btn">Review my draft</button>
+  </div>
+  <div id="review"></div>`;
+}
+
+function vExport(){
+  const w=state.ws;
+  const phases=DATA.phases.filter(p=>state.strategy==='7es'||p.fivesToo);
+  return `
+  <p class="muted no-print" style="margin-bottom:1.4rem">Read through your full plan below, then choose to save it or keep editing.</p>
+  <div class="print-doc">
+    <header class="pd-head">
+      <h1 class="pd-title">Lesson Plan</h1>
+      <p class="pd-meta">${esc(w.name||'\u2014')} &nbsp;\u00b7&nbsp; ${esc(w.grade||'\u2014')}</p>
+    </header>
+    <h2 class="pd-h">I. Learning Outcomes</h2>
+    <p>${esc(w.outcomes||'\u2014')}</p>
+    <h2 class="pd-h">II. Objectives</h2>
+    <table class="pd-table"><tbody>
+      <tr><th>Cognitive</th><td>${esc(w.cog||'\u2014')}</td></tr>
+      <tr><th>Affective</th><td>${esc(w.aff||'\u2014')}</td></tr>
+      <tr><th>Psychomotor</th><td>${esc(w.psy||'\u2014')}</td></tr>
+    </tbody></table>
+    <h2 class="pd-h">III. Subject Matter</h2>
+    <table class="pd-table"><tbody>
+      <tr><th>Topic</th><td>${esc(w.topic||'\u2014')}</td></tr>
+      <tr><th>Instructional materials</th><td>${esc(w.materials||'\u2014')}</td></tr>
+      <tr><th>Values integration</th><td>${esc(w.values||'\u2014')}</td></tr>
+    </tbody></table>
+    <h2 class="pd-h">IV. Procedure <span class="pd-strat">(${state.strategy.toUpperCase()})</span></h2>
+    <table class="pd-table proc">
+      <thead><tr><th>Phase</th><th>Teacher\u2019s activity</th><th>Student\u2019s activity</th></tr></thead>
+      <tbody>
+        ${phases.map(p=>`<tr><th>${esc(p.k)}</th><td>${esc(w['t_'+p.k]||'\u2014')}</td><td>${esc(w['s_'+p.k]||'\u2014')}</td></tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+  <div class="no-print" style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1.6rem">
+    <button class="btn" id="do-print">Save as PDF</button>
+    <a class="btn ghost" href="#/lpc/workspace">Keep editing</a>
+  </div>`;
+}
+
+function vLab(){
+  const subjects=Object.keys(DATA.sims);
+  const q=state.labq.trim().toLowerCase();
+  let list=DATA.sims[state.lab].map(s=>({...s,subject:state.lab}));
+  if(q){ list=subjects.flatMap(sub=>DATA.sims[sub].map(s=>({...s,subject:sub})))
+                      .filter(s=>(s.n+' '+s.u+' '+s.subject).toLowerCase().includes(q)); }
+  return `
+  <h1>Science Innovation Laboratory</h1>
+  <p class="lede">Virtual simulations make abstract science visible and safe to explore. Pick a subject \u2014 you only see what\u2019s relevant.</p>
+  <div class="tabs" role="group" aria-label="Subject">
+    ${subjects.map(s=>`<button class="tab" data-tab="${esc(s)}" aria-pressed="${!q&&state.lab===s}">${esc(s)}</button>`).join('')}
+  </div>
+  <div class="search"><label class="lbl" for="sim-q">Search all simulations</label>
+    <input type="text" id="sim-q" placeholder="e.g., circuits, genetics, climate" value="${esc(state.labq)}"></div>
+  <p class="muted" style="margin-top:.9rem">${q?`Showing matches for \u201c${esc(state.labq)}\u201d across all subjects.`:`Showing ${esc(state.lab)} \u00b7 a sample of the full directory.`}</p>
+  <div class="simlist">
+    ${list.length?list.map(s=>`
+      <div class="sim"><h3>${esc(s.n)} ${q?`<span class="muted">\u00b7 ${esc(s.subject)}</span>`:''}</h3>
+        <p>${esc(s.u)}</p><a href="${esc(s.url)}" target="_blank" rel="noopener">Open simulation \u2197</a></div>`).join('')
+      :`<p class="muted">No matches. Try another word.</p>`}
+  </div>`;
+}
+
+function vJournal(){
+  return `
+  <h1>Reflective Teaching &amp; AI Journal</h1>
+  <p class="lede">Reflect, learn, and grow. Honest reflection is where the independent thinking sticks.</p>
+  ${DATA.journal.map(sec=>`
+    <h2>${esc(sec.h)}</h2>
+    ${sec.qs.map((q,i)=>field('j_'+esc(sec.h)+i, q, 'Write a sentence or two\u2026')).join('')}
+  `).join('')}
+  <h2>Self-assessment</h2>
+  <p class="muted">Rate honestly: 1 = strongly disagree, 5 = strongly agree.</p>
+  <div style="margin-top:.6rem">
+    ${DATA.indicators.map((ind,i)=>`
+      <div class="rate"><span class="q">${esc(ind)}</span>
+        <span class="scale" role="radiogroup" aria-label="${esc(ind)}">
+          ${[1,2,3,4,5].map(n=>`<label><input type="radio" name="ind${i}" value="${n}"><span class="dot">${n}</span></label>`).join('')}
+        </span></div>`).join('')}
+  </div>
+  <div style="margin-top:1.4rem;display:flex;gap:.6rem;flex-wrap:wrap">
+    <a class="btn" href="#/journal/export">Export to PDF</a>
+    <button class="btn ghost" id="j-done">Finish reflection</button>
+  </div>
+  <div id="j-msg"></div>`;
+}
+
+function vJournalExport(){
+  const w=state.ws, r=state.ratings||{};
+  return `
+  <p class="muted no-print" style="margin-bottom:1.4rem">Read through your reflection below, then save it or keep editing.</p>
+  <div class="print-doc">
+    <header class="pd-head"><h1 class="pd-title">Reflective Teaching Journal</h1></header>
+    ${DATA.journal.map(sec=>`
+      <h2 class="pd-h">${esc(sec.h)}</h2>
+      ${sec.qs.map((q,i)=>`<p style="font-family:var(--ui);font-size:.84rem;color:#555;margin:.7rem 0 .15rem">${esc(q)}</p><p style="margin:0">${esc(w['j_'+sec.h+i]||'\u2014')}</p>`).join('')}
+    `).join('')}
+    <h2 class="pd-h">Self-assessment</h2>
+    <table class="pd-table"><tbody>
+      ${DATA.indicators.map((ind,i)=>`<tr><th style="width:auto;background:#faf8f3">${esc(ind)}</th><td style="width:3.5rem;text-align:center;font-weight:600">${esc(r['ind'+i]||'\u2014')}</td></tr>`).join('')}
+    </tbody></table>
+  </div>
+  <div class="no-print" style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1.6rem">
+    <button class="btn" id="do-print">Save as PDF</button>
+    <a class="btn ghost" href="#/journal">Keep editing</a>
+  </div>`;
+}
+
+function vAssessment(){
+  return `
+  <h1>Assessment Design Without AI</h1>
+  <p class="lede">This activity has a clear goal but isn\u2019t built yet.</p>
+  <div class="note">
+    In the research output, this activity is defined by its objective \u2014 strengthen authentic
+    assessment-design skills and reduce reliance on AI-generated assessment material \u2014 but it
+    has no detailed content or screens yet. Rather than fake it, the prototype shows it honestly
+    as <strong>in design</strong>. It\u2019s the next thing for your group to flesh out, and it can
+    reuse the same patterns you see here: a short learning section, clear guidelines, and a workspace.
+  </div>
+  <div style="margin-top:1.6rem"><a class="btn ghost" href="#/">\u2190 Back to all activities</a></div>`;
+}
+
+/* =====================================================================
+   Router
+   ===================================================================== */
+const routes={
+  '': {v:vHome, crumb:''},
+  'lpc': {v:vLpc, crumb:'Lesson Planning'},
+  'lpc/learn': {v:vLearn, crumb:'Lesson Planning · Learn'},
+  'lpc/guidelines': {v:vGuidelines, crumb:'Lesson Planning · Guidelines'},
+  'lpc/workspace': {v:vWorkspace, crumb:'Lesson Planning · Workspace'},
+  'lpc/export': {v:vExport, crumb:'Lesson Planning · Export'},
+  'lab': {v:vLab, crumb:'Science Laboratory'},
+  'journal': {v:vJournal, crumb:'Reflective Journal'},
+  'journal/export': {v:vJournalExport, crumb:'Reflective Journal · Export'},
+  'assessment': {v:vAssessment, crumb:'Assessment Design'},
+};
+
+function parentOf(path){
+  if(path==='lpc/export') return 'lpc/workspace';
+  if(path==='journal/export') return 'journal';
+  if(path.startsWith('lpc/')) return 'lpc';
+  if(path) return '';
+  return null;
+}
+
+function render(){
+  const path=(location.hash.replace(/^#\/?/,'')||'').replace(/\/$/,'');
+  const r=routes[path]||routes[''];
+  app.innerHTML=r.v();
+  crumbEl.textContent=r.crumb||'';
+  // textareas grow with their content instead of needing a drag handle
+  app.querySelectorAll('textarea').forEach(t=>{
+    const grow=()=>{ t.style.height='auto'; t.style.height=(t.scrollHeight+2)+'px'; };
+    grow(); t.addEventListener('input',grow);
+  });
+  // back affordance
+  const parent=parentOf(path);
+  backSlot.innerHTML = parent===null ? '' :
+    `<button class="back" id="back">\u2190 Back</button>`;
+  if(parent!==null){
+    document.getElementById('back').onclick=()=>{ location.hash = parent==='' ? '#/' : '#/'+parent; };
+  }
+  bind(path);
+  window.scrollTo({top:0});
+}
+
+/* attach behaviour after each render */
+function bind(path){
+  // home/activity cards & step links work as plain anchors — nothing to bind.
+
+  if(path==='lpc/workspace'){
+    app.querySelectorAll('[data-ws]').forEach(t=>{
+      t.addEventListener('input',e=>{ state.ws[e.target.dataset.ws]=e.target.value; });
+    });
+    app.querySelectorAll('[data-strat]').forEach(b=>{
+      b.addEventListener('click',()=>{ state.strategy=b.dataset.strat; render(); });
+    });
+    const rb=document.getElementById('review-btn');
+    rb.addEventListener('click',()=>{
+      const w=state.ws, lines=[];
+      if(w.outcomes) lines.push('Outcomes: '+w.outcomes);
+      if(w.topic) lines.push('Topic: '+w.topic);
+      ['cog','aff','psy'].forEach(k=>{ if(w[k]) lines.push(({cog:'Cognitive',aff:'Affective',psy:'Psychomotor'}[k])+': '+w[k]); });
+      const filled=DATA.phases.filter(p=>state.strategy==='7es'||p.fivesToo)
+        .filter(p=>w['t_'+p.k]||w['s_'+p.k]).map(p=>p.k);
+      lines.push('Strategy: '+state.strategy.toUpperCase());
+      lines.push('Phases drafted: '+(filled.length?filled.join(', '):'none yet'));
+      document.getElementById('review').innerHTML=
+        `<div class="review"><h3>Your draft so far</h3><pre>${esc(lines.join('\n'))||'Nothing entered yet.'}</pre>
+         <p class="muted" style="margin:.6rem 0 0">Happy with it? Use \u201cExport to PDF\u201d above to save the finished plan.</p></div>`;
+      document.getElementById('review').scrollIntoView({behavior:'smooth',block:'nearest'});
+    });
+  }
+
+  if(path==='lab'){
+    app.querySelectorAll('[data-tab]').forEach(b=>{
+      b.addEventListener('click',()=>{ state.lab=b.dataset.tab; state.labq=''; render(); });
+    });
+    const q=document.getElementById('sim-q');
+    q.addEventListener('input',e=>{
+      state.labq=e.target.value;
+      // re-render just the list without losing focus
+      const tmp=document.createElement('div'); tmp.innerHTML=vLab();
+      app.querySelector('.simlist').replaceWith(tmp.querySelector('.simlist'));
+      app.querySelector('.muted').replaceWith(tmp.querySelector('.muted'));
+      app.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-pressed', String(!state.labq && state.lab===t.dataset.tab)));
+    });
+  }
+
+  if(path==='journal'){
+    app.querySelectorAll('[data-ws]').forEach(t=>{
+      t.addEventListener('input',e=>{ state.ws[e.target.dataset.ws]=e.target.value; });
+    });
+    app.querySelectorAll('.scale input').forEach(radio=>{
+      if(state.ratings[radio.name]===radio.value) radio.checked=true;
+      radio.addEventListener('change',e=>{ state.ratings[e.target.name]=e.target.value; });
+    });
+    document.getElementById('j-done').addEventListener('click',()=>{
+      document.getElementById('j-msg').innerHTML=
+        `<div class="note" style="background:var(--accent-soft);color:var(--accent-ink)">Reflection complete. Use \u201cExport to PDF\u201d to keep this entry or hand it to your instructor.</div>`;
+      document.getElementById('j-msg').scrollIntoView({behavior:'smooth',block:'nearest'});
+    });
+  }
+
+  if(path==='lpc/export'||path==='journal/export'){
+    const b=document.getElementById('do-print');
+    if(b) b.addEventListener('click',()=>{ try{ window.print(); }catch(e){} });
+  }
+}
+
+window.addEventListener('hashchange',render);
+if(!location.hash) location.hash='#/';
+
+/* theme toggle (defaults to the OS setting; toggles for this session) */
+const root=document.documentElement;
+if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){
+  root.setAttribute('data-theme','dark');
+}
+document.getElementById('theme-toggle').addEventListener('click',()=>{
+  root.setAttribute('data-theme', root.getAttribute('data-theme')==='dark' ? 'light' : 'dark');
+});
+
+/* scroll controls */
+document.getElementById('scroll-top').addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+document.getElementById('scroll-bottom').addEventListener('click',()=>window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'}));
+
+render();
+</script>
+</body>
+</html>
