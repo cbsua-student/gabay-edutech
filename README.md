@@ -70,6 +70,6 @@ This is a client-side prototype, not a production system. Worth knowing:
 
 ## About this project
 
-Built solo, end to end: research alignment, UI/UX design, development, testing, deployment, and documentation. Originally developed as a commissioned thesis research output. Shared for portfolio purposes; not licensed for reuse
+Built solo, end to end: research alignment, UI/UX design, development, testing, deployment, and documentation. Originally developed as a commissioned thesis research output. Shared for portfolio purposes; not licensed for reuse.
 
 If you're reviewing this as part of a hiring process or want to talk about the build, feel free to reach out.
